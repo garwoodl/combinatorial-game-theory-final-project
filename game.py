@@ -54,9 +54,10 @@ class GameState:
 
     def get_legal_moves(self, player=TOAD):
         '''
-        A move is a tuple (player, amphibean_index) giving which player the move is for
-        and which of their amphibeans to move (counting right to left for TOAD and
-        left to right for FROG)
+        A move is a tuple (player, amphibean_index)
+        giving which player the move is for and which
+        of their amphibeans to move (counting right to
+        left for TOAD and left to right for FROG)
         '''
         legal_moves = []
         if player == TOAD:
