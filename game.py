@@ -31,15 +31,27 @@ class GameState:
 
         self.num_toads = 0
         self.num_frogs = 0
-        self.id = 0 # this is a unique id for each state. ternary with 
+        self.id = 0  # this is a unique id for each state. ternary with
         # BLANK = 0, TOAD = 1, FROG = 2
-        for square, i in enumerate(self.current_state):
+        for i, square in enumerate(self.current_state):
             if square == TOAD:
                 self.id += 3 ** i
                 self.num_toads += 1
             elif square == FROG:
                 self.num_frogs += 1
                 self.id += 2 * (3 ** i)
+
+        # we will keep track of the amphibian's location from
+        # their perspective as well the toad that is move k
+        # has index in the state at toad_locs[move]
+        self.toad_locs = [None]
+        self.frog_locs = [None]
+        for i, square in enumerate(self.current_state):
+            if square == FROG:
+                self.frog_locs.append(i)
+        for i, square in reversed(list(enumerate(self.current_state))):
+            if square == TOAD:
+                self.toad_locs.append(i)
 
     def __str__(self):
         '''
@@ -49,6 +61,12 @@ class GameState:
         for square in self.current_state:
             s += self.marker_chars[square] + '|'
         return s
+    
+    def __eq__(self, s2):
+        '''
+        true if same board
+        '''
+        return self.current_state == s2.current_state
 
     def reset(self):
         '''
@@ -56,49 +74,49 @@ class GameState:
         '''
         self.current_state = self.starting_state
 
-    def move_to_index(self, player, move: int):
-        '''
-        Converts the move integer into a list index
-        O(n)
-        '''
-        if player == TOAD:
-            x = 0 # last toad seen
-            i = self.board_size - 1 # index in list
-            while x < move:
-                if self.current_state[i] == TOAD:
-                    x += 1
-                if x < move:
-                    i -= 1
-        elif player == FROG:
-            x = 0
-            i = 0
-            while x < move:
-                if self.current_state[i] == FROG:
-                    x += 1
-                if x < move:
-                    i += 1
-        return i
+    # def get_move_index(self, player, move: int):
+    #     '''
+    #     Converts the move integer into a list index
+    #     O(n)
+    #     '''
+    #     if player == TOAD:
+    #         x = 0 # last toad seen
+    #         i = self.board_size - 1 # index in list
+    #         while x < move:
+    #             if self.current_state[i] == TOAD:
+    #                 x += 1
+    #             if x < move:
+    #                 i -= 1
+    #     elif player == FROG:
+    #         x = 0
+    #         i = 0
+    #         while x < move:
+    #             if self.current_state[i] == FROG:
+    #                 x += 1
+    #             if x < move:
+    #                 i += 1
+    #     return i
 
-    def is_move_legal(self, player, move: int):
+    # def is_move_legal(self, player, move: int):
         # get the move index
-        i = self.move_to_index(move)
+        # i = self.move_to_index(move)
 
-        # determine if its legal
-        if player == TOAD:
-            if i+2 <= self.board_size - 1:
-                if self.current_state[i+1] == FROG and self.current_state[i+2] == BLANK:
-                    return True
-            if i+1 <= self.board_size - 1:
-                if self.current_state[i+1] == BLANK:
-                    return True
-        elif player == FROG:
-            if 0 <= i-2:
-                if self.current_state[i-1] == TOAD and self.current_state[i-2] == BLANK:
-                    return True
-            if 0 <= i-1:
-                if self.current_state[i-1] == BLANK:
-                    return True
-        return False
+        # # determine if its legal
+        # if player == TOAD:
+        #     if i+2 <= self.board_size - 1:
+        #         if self.current_state[i+1] == FROG and self.current_state[i+2] == BLANK:
+        #             return True
+        #     if i+1 <= self.board_size - 1:
+        #         if self.current_state[i+1] == BLANK:
+        #             return True
+        # elif player == FROG:
+        #     if 0 <= i-2:
+        #         if self.current_state[i-1] == TOAD and self.current_state[i-2] == BLANK:
+        #             return True
+        #     if 0 <= i-1:
+        #         if self.current_state[i-1] == BLANK:
+        #             return True
+        # return False
 
     def get_legal_moves(self, player=TOAD):
         '''
@@ -108,29 +126,27 @@ class GameState:
         left for TOAD and left to right for FROG)
         '''
         legal_moves = []
+        amphibian_num = 1
         if player == TOAD:
-            # because we are looking left to right in the for loop
-            amphibian_num = self.num_toads
-        else:
-            amphibian_num = 1
-
-        for i, square in enumerate(self.current_state):
-            if player == square == TOAD:
-                if i+2 <= self.board_size - 1:
-                    if self.current_state[i+1] == FROG and self.current_state[i+2] == BLANK:
-                        legal_moves.append(amphibian_num)
-                if i+1 <= self.board_size - 1:
-                    if self.current_state[i+1] == BLANK:
-                        legal_moves.append(amphibian_num)
-                amphibian_num -= 1
-            elif player == square == FROG:
-                if 0 <= i-2:
-                    if self.current_state[i-1] == TOAD and self.current_state[i-2] == BLANK:
-                        legal_moves.append(amphibian_num)
-                if 0 <= i-1:
-                    if self.current_state[i-1] == BLANK:
-                        legal_moves.append(amphibian_num)
-                amphibian_num += 1
+            for i, square in reversed(list(enumerate(self.current_state))):  # moves right to left
+                if square == TOAD:
+                    if i+2 <= self.board_size - 1:
+                        if self.current_state[i+1] == FROG and self.current_state[i+2] == BLANK:
+                            legal_moves.append(amphibian_num)
+                    if i+1 <= self.board_size - 1:
+                        if self.current_state[i+1] == BLANK:
+                            legal_moves.append(amphibian_num)
+                    amphibian_num += 1
+        elif player == FROG:
+            for i, square in enumerate(self.current_state): # moves right to left
+                if square == FROG:
+                    if 0 <= i-2:
+                        if self.current_state[i-1] == TOAD and self.current_state[i-2] == BLANK:
+                            legal_moves.append(amphibian_num)
+                    if 0 <= i-1:
+                        if self.current_state[i-1] == BLANK:
+                            legal_moves.append(amphibian_num)
+                    amphibian_num += 1
         return legal_moves
 
     def make_move(self, player, move: int):
@@ -141,31 +157,69 @@ class GameState:
         Returns False if the move is illegal
         otherwise returns True
         '''
-        if not self.is_move_legal(player, move):
-            return False
+        if player == TOAD:
+            idx = self.toad_locs[move]
+            if idx + 1 <= self.board_size - 1:
+                if self.current_state[idx + 1] == BLANK:
+                    # slide forward
+                    self.current_state[idx] = BLANK
+                    self.current_state[idx + 1] = TOAD
+                    self.toad_locs[move] += 1
+                elif self.current_state[idx + 1] == FROG and idx + 2 <= self.board_size - 1:
+                    if self.current_state[idx + 2] == BLANK:
+                        # jump over frog
+                        self.current_state[idx] = BLANK
+                        self.current_state[idx + 2] = TOAD
+                        self.toad_locs[move] += 2
+        elif player == FROG:
+            idx = self.frog_locs[move]
+            if idx - 1 >= 0:
+                if self.current_state[idx - 1] == BLANK:
+                    # slide forward
+                    self.current_state[idx] = BLANK
+                    self.current_state[idx - 1] = FROG
+                    self.frog_locs[move] -= 1
+                elif self.current_state[idx - 1] == TOAD and idx - 2 >= 0:
+                    if self.current_state[idx - 2] == BLANK:
+                        # jump over toad
+                        self.current_state[idx] = BLANK
+                        self.current_state[idx - 2] = TOAD
+                        self.frog_locs[move] -= 2
+
+    # def make_move(self, player, move: int):
+    #     '''
+    #     player should be either TOAD or FROG
+    #     move should be the nth frog from the middle going
+    #     out to the respective starting position
+    #     Returns False if the move is illegal
+    #     otherwise returns True
+    #     '''
+        # if not self.is_move_legal(player, move):
+        #     return False
+        # it would be faster to assume the move is always legal
         
-        i = self.get_move_index(player, move)
+        # i = self.get_move_index(player, move)
 
         # make the move
-        if player == TOAD:
-            if i+2 <= self.board_size - 1:
-                if self.current_state[i+1] == FROG and self.current_state[i+2] == BLANK:
-                    self.current_state[i] = BLANK
-                    self.current_state[i+2] = TOAD
-            if i+1 <= self.board_size - 1:
-                if self.current_state[i+1] == BLANK:
-                    self.current_state[i] = BLANK
-                    self.current_state[i+1] = TOAD
-        elif player == FROG:
-            if 0 <= i-2:
-                if self.current_state[i-1] == TOAD and self.current_state[i-2] == BLANK:
-                    self.current_state[i] = BLANK
-                    self.current_state[i-2] = FROG
-            if 0 <= i-1:
-                if self.current_state[i-1] == BLANK:
-                    self.current_state[i] = BLANK
-                    self.current_state[i-1] = FROG
-        return True
+        # if player == TOAD:
+        #     if i+2 <= self.board_size - 1:
+        #         if self.current_state[i+1] == FROG and self.current_state[i+2] == BLANK:
+        #             self.current_state[i] = BLANK
+        #             self.current_state[i+2] = TOAD
+        #     if i+1 <= self.board_size - 1:
+        #         if self.current_state[i+1] == BLANK:
+        #             self.current_state[i] = BLANK
+        #             self.current_state[i+1] = TOAD
+        # elif player == FROG:
+        #     if 0 <= i-2:
+        #         if self.current_state[i-1] == TOAD and self.current_state[i-2] == BLANK:
+        #             self.current_state[i] = BLANK
+        #             self.current_state[i-2] = FROG
+        #     if 0 <= i-1:
+        #         if self.current_state[i-1] == BLANK:
+        #             self.current_state[i] = BLANK
+        #             self.current_state[i-1] = FROG
+        # return True
 
 
 def run_game_loop(initial_state):
