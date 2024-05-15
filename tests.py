@@ -1,4 +1,4 @@
-from game import GameState, TOAD, FROG, BLANK
+from states import GameState, TOAD, FROG, BLANK
 
 
 def test_state():
@@ -8,6 +8,7 @@ def test_state():
     assert G.num_frogs == G.num_toads == 1
     assert G.toad_locs == [None, 0]
     assert G.frog_locs == [None, 3], G.frog_locs
+    assert not G.is_game_over()
 
 
 def test_get_legal_moves():
