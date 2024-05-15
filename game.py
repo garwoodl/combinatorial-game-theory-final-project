@@ -1,4 +1,4 @@
-from agents import Agent, RandomAgent
+from agents import Agent, RandomAgent, EndAgent
 from states import GameState, TOAD, FROG, BLANK
 
 
@@ -48,10 +48,11 @@ def run_game_loop(initial_state: GameState, toad_agent: Agent,
 
 
 def main():
-    initial_position = [1] * 5 + [0] * 10 + [-1] * 5
+    initial_position = [1] * 3 + [0] * 10 + [-1] * 3
     G = GameState(initial_position)
-    agent1 = RandomAgent(initial_state=G, amphibian=TOAD, agent_name='random1')
-    agent2 = RandomAgent(initial_state=G, amphibian=FROG, agent_name='random2')
+    # agent1 = RandomAgent(initial_state=G, amphibian=TOAD, agent_name='random1')
+    agent1 = EndAgent(initial_state=G, amphibian=TOAD, agent_name='last', type='last')
+    agent2 = RandomAgent(initial_state=G, amphibian=FROG, agent_name='random')
     run_game_loop(G, agent1, agent2)
 
 

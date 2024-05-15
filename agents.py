@@ -49,3 +49,26 @@ class RandomAgent(Agent):
             return False
         return rand.choice(legal_moves)
 
+
+class EndAgent(Agent):
+    '''
+    This agent will always pick the amphibian with legal move
+    that is first or last depending on desire
+    If 'type' is first it will pick first and if type is 'last'
+    it will pick the last
+    '''
+    def __init__(self, initial_state: GameState, amphibian=TOAD, agent_name='', type='first'):
+        self.type = str.lower(type)
+        Agent.__init__(self, initial_state, amphibian, agent_name)
+
+    def choose_move(self, state: GameState):
+        legal_moves = state.get_legal_moves()
+        if len(legal_moves) == 0:
+            return False
+        if self.type == 'first':
+            return min(legal_moves)
+        elif self.type == 'last':
+            return max(legal_moves)
+        else:
+            raise ValueError('type must be either (first) or (last)')
+
