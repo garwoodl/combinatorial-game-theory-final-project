@@ -24,10 +24,9 @@ def run_game_loop(initial_state: GameState, toad_agent: Agent,
         current_state.make_move(move=toad_move)
         move_count += 1
         if verbose:
-            print(f"{toad_agent.agent_name} makes move {move_count}")
+            print(f"{toad_agent.agent_name} makes move {toad_move}")
             print(current_state)
 
-        print("TEST", current_state.current_player)
         frog_move = frog_agent.choose_move(current_state)
         if frog_move is False:
             game_over = False
@@ -35,22 +34,22 @@ def run_game_loop(initial_state: GameState, toad_agent: Agent,
         current_state.make_move(move=frog_move)
         move_count += 1
         if verbose:
-            print(f"{frog_agent.agent_name} makes move {move_count}")
+            print(f"{frog_agent.agent_name} makes move {frog_move}")
             print(current_state)
-        print("TEST2", current_state.current_player)
 
     if toad_move is False:  # toads had no moves
         if verbose:
-            print(f"{frog_agent.agent_name} playing as Frogs wins!")
+            print(f"{frog_agent.agent_name} playing as Frogs wins in {move_count} moves!")
         return False
     elif frog_move is False:  # frogs had no moves
         if verbose:
-            print(f"{toad_agent.agent_name} playing as Toads wins!")
+            print(f"{toad_agent.agent_name} playing as Toads wins in {move_count} moves!")
         return True
 
 
 def main():
-    G = GameState([1, 0, 0, -1])
+    initial_position = [1] * 5 + [0] * 10 + [-1] * 5
+    G = GameState(initial_position)
     agent1 = RandomAgent(initial_state=G, amphibian=TOAD, agent_name='random1')
     agent2 = RandomAgent(initial_state=G, amphibian=FROG, agent_name='random2')
     run_game_loop(G, agent1, agent2)

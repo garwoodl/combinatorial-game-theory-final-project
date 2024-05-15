@@ -122,7 +122,7 @@ class GameState:
         #             return True
         # return False
 
-    def get_legal_moves(self, player=TOAD):
+    def get_legal_moves(self):
         '''
         A move is a tuple (player, amphibean_index)
         giving which player the move is for and which
@@ -131,7 +131,7 @@ class GameState:
         '''
         legal_moves = []
         amphibian_num = 1
-        if player == TOAD:
+        if self.current_player == TOAD:
             for i, square in reversed(list(enumerate(self.current_state))):  # moves right to left
                 if square == TOAD:
                     if i+2 <= self.board_size - 1:
@@ -141,7 +141,7 @@ class GameState:
                         if self.current_state[i+1] == BLANK:
                             legal_moves.append(amphibian_num)
                     amphibian_num += 1
-        elif player == FROG:
+        elif self.current_player == FROG:
             for i, square in enumerate(self.current_state): # moves right to left
                 if square == FROG:
                     if 0 <= i-2:
@@ -187,12 +187,15 @@ class GameState:
                     if self.current_state[idx - 2] == BLANK:
                         # jump over toad
                         self.current_state[idx] = BLANK
-                        self.current_state[idx - 2] = TOAD
+                        self.current_state[idx - 2] = FROG
                         self.frog_locs[move] -= 2
+
+        # set current player to the other player
         if self.current_player == TOAD:
-            self.current_player == FROG
+            self.current_player = FROG
         elif self.current_player == FROG:
             self.current_player = TOAD
+        return self
 
 
 def main():

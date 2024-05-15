@@ -44,9 +44,8 @@ class RandomAgent(Agent):
         Agent.__init__(self, initial_state, amphibian, agent_name)
 
     def choose_move(self, state: GameState):
-        legal_moves = state.get_legal_moves(player=self.amphibian)
+        legal_moves = state.get_legal_moves()
         if len(legal_moves) == 0:
             return False
         return rand.choice(legal_moves)
-    
 
