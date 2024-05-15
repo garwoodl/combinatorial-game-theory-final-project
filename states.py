@@ -1,6 +1,7 @@
 '''
 File to implement the game Toads and Frogs
 '''
+import copy
 
 TOAD = 1
 FROG = -1
@@ -69,8 +70,9 @@ class GameState:
         return self.current_state == s2.current_state
 
     def copy(self):
-        G = GameState(self.current_state, starting_player=self.current_player)
-        return G
+        # G = GameState(self.current_state, starting_player=self.current_player)
+        # return G
+        return copy.deepcopy(self)
 
     def reset(self):
         '''
