@@ -35,12 +35,36 @@ class Agent:
         pass
 
 
+class HumanInput(Agent):
+    '''
+    An object that handles human input from the command line
+    '''
+    def __init__(self, initial_state: GameState, amphibian=TOAD, agent_name='human'):
+        Agent.__init__(self, initial_state, amphibian, agent_name)
+
+    def choose_move(self, state: GameState):
+        legal_moves = state.get_legal_moves()
+        if len(legal_moves) == 0:
+            return False
+
+        move = input(f'{self.agent_name}, please enter a move: ')
+        while True:
+            try:
+                move = int(move)
+                if move in legal_moves:
+                    return move
+                else:
+                    move = input(f'Illegal move. Must be in {list(legal_moves)}. Try again: ')
+            except:
+                move = input(f'Move must be an integer in {list(legal_moves)}. Try again: ')
+
+
 class RandomAgent(Agent):
     '''
     An agent that will always pick a random move
     from a state
     '''
-    def __init__(self, initial_state: GameState, amphibian=TOAD, agent_name=''):
+    def __init__(self, initial_state: GameState, amphibian=TOAD, agent_name='random'):
         Agent.__init__(self, initial_state, amphibian, agent_name)
 
     def choose_move(self, state: GameState):

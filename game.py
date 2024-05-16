@@ -1,4 +1,4 @@
-from agents import Agent, RandomAgent, EndAgent
+from agents import Agent, RandomAgent, EndAgent, HumanInput
 from states import GameState, TOAD, FROG, BLANK
 import numpy as np
 import matplotlib.pyplot as plt
@@ -72,34 +72,37 @@ def simulate_many_games(num_games: int, initial_state: GameState,
 
 
 def main():
-    a = 5
-    b = 10
+    a = 2
+    b = 2
     initial_position = [TOAD] * a + [BLANK] * b + [FROG] * a
     G = GameState(initial_position, starting_player=TOAD)
-    agent1 = RandomAgent(initial_state=G, amphibian=TOAD, agent_name='random1')
+    # agent1 = RandomAgent(initial_state=G, amphibian=TOAD, agent_name='random1')
     # agent1 = EndAgent(initial_state=G, amphibian=TOAD, agent_name='first', type='first')
+    agent1 = HumanInput(initial_state=G, amphibian=TOAD, agent_name='human')
     agent2 = RandomAgent(initial_state=G, amphibian=FROG, agent_name='random2')
-    # run_game_loop(G, agent1, agent2, verbose=False)
+    run_game_loop(G, agent1, agent2, verbose=True)
 
-    H = GameState(initial_position)
-    num_games = 1000
-    tic = time.time()
-    results = simulate_many_games(num_games, H, agent1, agent2, verbose=False)
-    toc = time.time()
-    print(f'Simulation took {round(toc - tic, 5)} seconds')
+    # H = GameState(initial_position)
+    # num_games = 10000
+    # starting_player = 'mix'
+    # tic = time.time()
+    # results = simulate_many_games(num_games, H, agent1, agent2,
+    #                               starting_player=starting_player, verbose=False)
+    # toc = time.time()
+    # print(f'Simulation took {round(toc - tic, 5)} seconds')
 
-    # Count the number of wins for each player
-    t_wins = np.sum(results == TOAD)
-    f_wins = np.sum(results == FROG)
-    print(f"Toads won {t_wins} games ({round(t_wins / num_games * 100, 4)}%)")
-    print(f"Frogs won {f_wins} games ({round(f_wins / num_games * 100, 4)}%)")
+    # # Count the number of wins for each player
+    # t_wins = np.sum(results == TOAD)
+    # f_wins = np.sum(results == FROG)
+    # print(f"Toads won {t_wins} games ({round(t_wins / num_games * 100, 4)}%)")
+    # print(f"Frogs won {f_wins} games ({round(f_wins / num_games * 100, 4)}%)")
 
-    # Plotting the results
-    plt.bar(['Toad', 'Frog'], [t_wins, f_wins], color=['blue', 'red'])
-    plt.xlabel('Player')
-    plt.ylabel('Number of Wins')
-    plt.title('Distribution of Wins')
-    plt.show()
+    # # Plotting the results
+    # plt.bar([f'Toad ({agent1.agent_name})', f'Frog ({agent2.agent_name})'], [t_wins, f_wins], color=['blue', 'red'])
+    # plt.xlabel('Player')
+    # plt.ylabel('Number of Wins')
+    # plt.title(f'Distribution of Wins ({starting_player} playing first)')
+    # plt.show()
 
 
 if __name__ == "__main__":
