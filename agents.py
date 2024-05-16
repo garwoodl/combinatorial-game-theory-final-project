@@ -47,7 +47,7 @@ class RandomAgent(Agent):
         legal_moves = state.get_legal_moves()
         if len(legal_moves) == 0:
             return False
-        return rand.choice(legal_moves)
+        return rand.choice(list(legal_moves))
 
 
 class EndAgent(Agent):

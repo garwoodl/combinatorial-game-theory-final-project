@@ -11,13 +11,19 @@ def test_state():
 
 
 def test_get_legal_moves():
+    # G1 = GameState([1, 0, 0, -1], TOAD)
+    # assert G1.get_legal_moves() == [1], G1.get_legal_moves()
+    # G2 = GameState([1, -1, 0, 1, 0, 0, -1, -1, -1, 0, 1, -1], TOAD)
+    # assert G2.get_legal_moves() == [2, 3], f'{G2.get_legal_moves()}'
+    # G3 = GameState([1, -1, 0, 1, 0, 0, -1, -1, -1, 0, 1, -1], FROG)
+    # assert G3.get_legal_moves() == [2, 5]
+
     G1 = GameState([1, 0, 0, -1], TOAD)
-    assert G1.get_legal_moves() == [1], G1.get_legal_moves()
-    assert G1.get_legal_moves() == [1], G1.get_legal_moves()
+    assert G1.get_legal_moves() == set([1]), G1.get_legal_moves()
     G2 = GameState([1, -1, 0, 1, 0, 0, -1, -1, -1, 0, 1, -1], TOAD)
-    assert G2.get_legal_moves() == [2, 3], f'{G2.get_legal_moves()}'
+    assert G2.get_legal_moves() == set([2, 3]), f'{G2.get_legal_moves()}'
     G3 = GameState([1, -1, 0, 1, 0, 0, -1, -1, -1, 0, 1, -1], FROG)
-    assert G3.get_legal_moves() == [2, 5]
+    assert G3.get_legal_moves() == set([2, 5])
 
 
 def test_make_move():

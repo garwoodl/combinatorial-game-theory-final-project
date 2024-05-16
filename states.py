@@ -80,36 +80,69 @@ class GameState:
         '''
         self.current_state = self.starting_state
 
+    # def get_legal_moves(self):
+    #     '''
+    #     A move is a tuple (player, amphibean_index)
+    #     giving which player the move is for and which
+    #     of their amphibeans to move (counting right to
+    #     left for TOAD and left to right for FROG)
+    #     This is O(board_size) so we should try not to use it
+    #     '''
+    #     legal_moves = []
+    #     amphibian_num = 1
+    #     if self.current_player == TOAD:
+    #         for i, square in reversed(list(enumerate(self.current_state))):  # moves right to left
+    #             if square == TOAD:
+    #                 if i+2 <= self.board_size - 1:
+    #                     if self.current_state[i+1] == FROG and self.current_state[i+2] == BLANK:
+    #                         legal_moves.append(amphibian_num)
+    #                 if i+1 <= self.board_size - 1:
+    #                     if self.current_state[i+1] == BLANK:
+    #                         legal_moves.append(amphibian_num)
+    #                 amphibian_num += 1
+    #     elif self.current_player == FROG:
+    #         for i, square in enumerate(self.current_state):  # moves right to left
+    #             if square == FROG:
+    #                 if 0 <= i-2:
+    #                     if self.current_state[i-1] == TOAD and self.current_state[i-2] == BLANK:
+    #                         legal_moves.append(amphibian_num)
+    #                 if 0 <= i-1:
+    #                     if self.current_state[i-1] == BLANK:
+    #                         legal_moves.append(amphibian_num)
+    #                 amphibian_num += 1
+    #     return legal_moves
+
     def get_legal_moves(self):
         '''
         A move is a tuple (player, amphibean_index)
         giving which player the move is for and which
         of their amphibeans to move (counting right to
         left for TOAD and left to right for FROG)
-        This is O(n) so we should try not to use it
+        This is O(max(num_toads, num_frogs))
         '''
-        legal_moves = []
-        amphibian_num = 1
+        legal_moves = set()
         if self.current_player == TOAD:
-            for i, square in reversed(list(enumerate(self.current_state))):  # moves right to left
-                if square == TOAD:
-                    if i+2 <= self.board_size - 1:
-                        if self.current_state[i+1] == FROG and self.current_state[i+2] == BLANK:
-                            legal_moves.append(amphibian_num)
-                    if i+1 <= self.board_size - 1:
-                        if self.current_state[i+1] == BLANK:
-                            legal_moves.append(amphibian_num)
-                    amphibian_num += 1
+            for move in range(1, self.num_toads+1):
+                idx = self.toad_locs[move]
+                if idx + 1 <= self.board_size - 1:  # makes sure we stay on the board
+                    if self.current_state[idx + 1] == BLANK:
+                        # slide forward
+                        legal_moves.add(move)
+                    elif self.current_state[idx + 1] == FROG and idx + 2 <= self.board_size - 1:
+                        if self.current_state[idx + 2] == BLANK:
+                            # jump over frog
+                            legal_moves.add(move)
         elif self.current_player == FROG:
-            for i, square in enumerate(self.current_state):  # moves right to left
-                if square == FROG:
-                    if 0 <= i-2:
-                        if self.current_state[i-1] == TOAD and self.current_state[i-2] == BLANK:
-                            legal_moves.append(amphibian_num)
-                    if 0 <= i-1:
-                        if self.current_state[i-1] == BLANK:
-                            legal_moves.append(amphibian_num)
-                    amphibian_num += 1
+            for move in range(1, self.num_frogs+1):
+                idx = self.frog_locs[move]
+                if idx - 1 >= 0:
+                    if self.current_state[idx - 1] == BLANK:
+                        # slide forward
+                        legal_moves.add(move)
+                    elif self.current_state[idx - 1] == TOAD and idx - 2 >= 0:
+                        if self.current_state[idx - 2] == BLANK:
+                            # jump over toad
+                            legal_moves.add(move)
         return legal_moves
 
     def change_player(self):

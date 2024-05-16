@@ -76,13 +76,13 @@ def main():
     b = 10
     initial_position = [TOAD] * a + [BLANK] * b + [FROG] * a
     G = GameState(initial_position, starting_player=TOAD)
-    # agent1 = RandomAgent(initial_state=G, amphibian=TOAD, agent_name='random1')
-    agent1 = EndAgent(initial_state=G, amphibian=TOAD, agent_name='first', type='first')
+    agent1 = RandomAgent(initial_state=G, amphibian=TOAD, agent_name='random1')
+    # agent1 = EndAgent(initial_state=G, amphibian=TOAD, agent_name='first', type='first')
     agent2 = RandomAgent(initial_state=G, amphibian=FROG, agent_name='random2')
     # run_game_loop(G, agent1, agent2, verbose=False)
 
     H = GameState(initial_position)
-    num_games = 10000
+    num_games = 1000
     tic = time.time()
     results = simulate_many_games(num_games, H, agent1, agent2, verbose=False)
     toc = time.time()
