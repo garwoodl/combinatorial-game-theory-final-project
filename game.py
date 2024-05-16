@@ -2,6 +2,7 @@ from agents import Agent, RandomAgent, EndAgent
 from states import GameState, TOAD, FROG, BLANK
 import numpy as np
 import matplotlib.pyplot as plt
+import time
 
 
 def run_game_loop(initial_state: GameState, toad_agent: Agent,
@@ -50,14 +51,20 @@ def run_game_loop(initial_state: GameState, toad_agent: Agent,
 
 
 def simulate_many_games(num_games: int, initial_state: GameState,
-                        toad_agent: Agent, frog_agent: Agent, verbose=False):
+                        toad_agent: Agent, frog_agent: Agent, starting_player='mix', verbose=False):
     '''
     Run a simulation of many games and return the results aa numpy array
     of the form [TOAD, FROG, FROG, ...] giving the winner of each game
+    starting_player defaults to 'mix' which means every game is alternated between who starts first
+    if starting_player is given as TOAD or FROG then that amphibian will start all games
     '''
     results = np.zeros(num_games)
     for i in range(num_games):
         G = initial_state.copy()
+        if starting_player == 'mix':
+            G.current_player = TOAD if (i % 2 == 0) else FROG # alternate every other game
+        else: 
+            G.current_player = starting_player  # can be used to modify who starts the gamess
         result = run_game_loop(G, toad_agent, frog_agent, verbose=verbose)
         winner = TOAD if result else FROG
         results[i] = winner
@@ -68,16 +75,18 @@ def main():
     a = 5
     b = 10
     initial_position = [TOAD] * a + [BLANK] * b + [FROG] * a
-    G = GameState(initial_position)
-    agent1 = RandomAgent(initial_state=G, amphibian=TOAD, agent_name='random1')
-    # agent1 = EndAgent(initial_state=G, amphibian=TOAD, agent_name='last', type='last')
+    G = GameState(initial_position, starting_player=TOAD)
+    # agent1 = RandomAgent(initial_state=G, amphibian=TOAD, agent_name='random1')
+    agent1 = EndAgent(initial_state=G, amphibian=TOAD, agent_name='first', type='first')
     agent2 = RandomAgent(initial_state=G, amphibian=FROG, agent_name='random2')
     # run_game_loop(G, agent1, agent2, verbose=False)
 
     H = GameState(initial_position)
-    num_games = 100000
+    num_games = 10000
+    tic = time.time()
     results = simulate_many_games(num_games, H, agent1, agent2, verbose=False)
-
+    toc = time.time()
+    print(f'Simulation took {round(toc - tic, 5)} seconds')
 
     # Count the number of wins for each player
     t_wins = np.sum(results == TOAD)

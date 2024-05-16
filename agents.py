@@ -71,4 +71,3 @@ class EndAgent(Agent):
             return max(legal_moves)
         else:
             raise ValueError('type must be either (first) or (last)')
-
