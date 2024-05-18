@@ -112,6 +112,19 @@ class GameState:
                     amphibian_num += 1
         return legal_moves
 
+    def is_game_over(self):
+        '''
+        Returns [boolean outcome, winner] of a game
+        winner is None if the game is not over
+        '''
+        if len(self.get_legal_moves()) == 0:
+            if self.current_player == TOAD:
+                return (True, FROG)
+            elif self.current_player == FROG:
+                return (True, TOAD)
+        else:
+            return (False, None)
+
     # def get_legal_moves(self):
     #     '''
     #     A move is a tuple (player, amphibean_index)
