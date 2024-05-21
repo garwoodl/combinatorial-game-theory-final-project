@@ -1,4 +1,4 @@
-from agents import Agent, RandomAgent, EndAgent, HumanInput
+from agents import Agent, RandomAgent, EndAgent, HumanInput, RLAgent
 from states import GameState, TOAD, FROG, BLANK
 import numpy as np
 import matplotlib.pyplot as plt
@@ -19,10 +19,12 @@ def run_game_loop(initial_state: GameState, toad_agent: Agent,
     current_state = initial_state.copy()
     game_over = False
     move_count = 0
+    toad_move = None
+    frog_move = None
     while not game_over:
         toad_move = toad_agent.choose_move(current_state)
-        if toad_move is False:
-            game_over = False
+        if toad_move is False or toad_move == 'illegal':
+            game_over = True
             break
         current_state.make_move(move=toad_move)
         move_count += 1
@@ -31,8 +33,8 @@ def run_game_loop(initial_state: GameState, toad_agent: Agent,
             print(current_state)
 
         frog_move = frog_agent.choose_move(current_state)
-        if frog_move is False:
-            game_over = False
+        if frog_move is False or frog_move == 'illegal':
+            game_over = True
             break
         current_state.make_move(move=frog_move)
         move_count += 1
@@ -44,10 +46,18 @@ def run_game_loop(initial_state: GameState, toad_agent: Agent,
         if verbose:
             print(f"{frog_agent.agent_name} playing as Frogs wins in {move_count} moves!")
         return False
+    elif toad_move == 'illegal':
+        if verbose:
+            print(f"{frog_agent.agent_name} playing as Frogs wins in {move_count} moves")
+            print(f"because {toad_agent.agent_name} made an illegal move")
     elif frog_move is False:  # frogs had no moves
         if verbose:
             print(f"{toad_agent.agent_name} playing as Toads wins in {move_count} moves!")
         return True
+    elif frog_move == 'illegal':
+        if verbose:
+            print(f"{toad_agent.agent_name} playing as Frogs wins in {move_count} moves")
+            print(f"because {frog_agent.agent_name} made an illegal move")
 
 
 def simulate_many_games(num_games: int, initial_state: GameState,
@@ -78,9 +88,12 @@ def main():
     G = GameState(initial_position, starting_player=TOAD)
     # agent1 = RandomAgent(initial_state=G, amphibian=TOAD, agent_name='random1')
     # agent1 = EndAgent(initial_state=G, amphibian=TOAD, agent_name='first', type='first')
-    agent1 = HumanInput(initial_state=G, amphibian=TOAD, agent_name='human')
+    # agent1 = HumanInput(initial_state=G, amphibian=TOAD, agent_name='human')
+    agent1 = RLAgent(G, TOAD, batch_size=2)
     agent2 = RandomAgent(initial_state=G, amphibian=FROG, agent_name='random2')
-    run_game_loop(G, agent1, agent2, verbose=True)
+    losses = agent1.train(num_episodes=1, epsilon=0.1)
+    print(losses)
+    # run_game_loop(G, agent1, agent2, verbose=True)
 
     # H = GameState(initial_position)
     # num_games = 10000
