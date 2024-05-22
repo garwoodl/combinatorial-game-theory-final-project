@@ -4,6 +4,7 @@ import numpy as np
 import torch.nn as nn
 import torch.optim as optim
 import torch
+import matplotlib.pyplot as plt
 
 
 class Agent:
@@ -106,36 +107,39 @@ class HumanInput(Agent):
 
 # memory class from Pytorch DQN tutorial
 # https://pytorch.org/tutorials/intermediate/reinforcement_q_learning.html
-# from collections import namedtuple, deque
-# Transition = namedtuple('Transition',
-#                         ('state', 'action', 'next_state', 'reward'))
+from collections import deque
 
 
-# class ReplayMemory(object):
+class ReplayBuffer:
+    def __init__(self, capacity):
+        self.buffer = deque(maxlen=capacity)
 
-#     def __init__(self, capacity):
-#         self.memory = deque([], maxlen=capacity)
+    def push(self, state, action, reward, next_state, done):
+        self.buffer.append((state, action, reward, next_state, done))
 
-#     def push(self, *args):
-#         """Save a transition"""
-#         self.memory.append(Transition(*args))
+    def sample(self, batch_size):
+        state, action, reward, next_state, done = zip(*rand.sample(self.buffer, batch_size))
+        return state, action, reward, next_state, done
 
-#     def sample(self, batch_size):
-#         return rand.sample(self.memory, batch_size)
-
-#     def __len__(self):
-#         return len(self.memory)
+    def __len__(self):
+        return len(self.buffer)
 
 
 class RLAgent(Agent):
     '''
     The agent that will learn to play Toads and Frogs through Q-learning
     '''
-    def __init__(self, initial_state: GameState, amphibian=TOAD, agent_name='rl', lr=1e-3, batch_size=10):
+    def __init__(self, initial_state: GameState, amphibian=TOAD, agent_name='rl',
+                 lr=1e-3, batch_size=10, buffer_capacity=1000):
         self.lr = lr
         self.gamma = 0.9
+        self.buffer_capacity = buffer_capacity
+        self.buffer = ReplayBuffer(self.buffer_capacity)
+        self.target_update_freq = 5  # how often to update the target network
         Agent.__init__(self, initial_state, amphibian, agent_name=agent_name)
         self.model = self.initialize_model()
+        self.target_model = self.initialize_model()
+        self.update_target_network()
         self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
         self.batch_size = batch_size
         self.rewards = {
@@ -161,12 +165,22 @@ class RLAgent(Agent):
         )
         return model
 
+    def update_target_network(self):
+        '''
+        Copy the main parameters to the target network
+        '''
+        self.target_model.load_state_dict(self.model.state_dict())
+
     def state_to_q_vals(self, state: GameState):
         '''
         Returns a tensor of all q values for all actions in a given state
         '''
         vec = torch.tensor(state.current_state, dtype=torch.float32).unsqueeze(0)
         return self.model(vec)
+
+    def target_state_to_q_vals(self, state: GameState):
+        vec = torch.tensor(state.current_state, dtype=torch.float32).unsqueeze(0)
+        return self.target_model(vec)
 
     def choose_move(self, state: GameState, epsilon=0):
         '''
@@ -223,70 +237,101 @@ class RLAgent(Agent):
         else:
             return G, 0, False
 
-    def train(self, num_episodes: int, epsilon=0):
-        steps_done = 0
+    def train(self, opponent: Agent, num_episodes: int, start_epsilon=0):
+        '''
+        The main train loop that runs for num_episodes
+        After each state transfer (move in any episode) the
+        resulting state, reward, and done will be pushed to
+        the replay memory for training.
+        Plays against the Agent given
+        '''
+        epsilon = start_epsilon  # set up epsilon schedule later
         losses = []
-        for epsiode in range(num_episodes):
+        for episode in range(num_episodes):
             state = self.initial_state.copy()
-            target_vals = []
-            actual_vals = []
             episode_done = False
             while not episode_done:
-                # get the transition outcome
                 action = self.choose_move_train(state, epsilon)
                 next_state, reward, done = self.step(state, action)
+                # print("State", state)
+                # print("Action", action)
+                # print("Reward", reward)
+                # print("Next State", next_state)
 
-                # the actual q value we see is what the model evaluates rn for this action
-                current_q_vals = self.state_to_q_vals(state)
-                actual_q_val = current_q_vals[0, action - 1]
-                print('current_q_vals', current_q_vals)
-                print('actual_q_val', actual_q_val)
-                actual_vals.append(actual_q_val)
+                # the opponent responds
+                if not done:
+                    opp_move = opponent.choose_move(next_state)
+                    next_state.make_move(opp_move)
 
-                # bellman equation
-                # y is the target q value for the state
-                if done:
-                    target_q_val = torch.tensor(reward, dtype=torch.float32)
-                else:
-                    next_q_vals = self.state_to_q_vals(next_state)
-                    max_next_q_val = next_q_vals.max().item()
-                    target_q_val = torch.tensor(reward + self.gamma * max_next_q_val, dtype=torch.float32)
-                target_vals.append(target_q_val.detach())
-
+                self.buffer.push(state, action, reward, next_state, done)
                 state = next_state
                 episode_done = done
-                steps_done += 1
-                print(actual_vals)
-                if len(actual_vals) > self.batch_size:
-                    actual_val_batch = torch.stack(actual_vals[-self.batch_size:])
-                    target_val_batch = torch.stack(target_vals[-self.batch_size:])
 
-                    loss_fn = nn.SmoothL1Loss()
-                    loss = loss_fn(actual_val_batch, target_val_batch)
-                    losses.append(loss.item())
+                if len(self.buffer) >= self.batch_size:
+                    loss = self.optimize_model()  # this optimizes and returns the loss
+                    losses.append(loss)
 
-                    self.optimizer.zero_grad()
-                    loss.backward()
-                    self.optimizer.step()
+            if episode % self.target_update_freq == 0:
+                self.update_target_network()
+
         return losses
 
+    def optimize_model(self):
+        '''
+        Using the current replay buffer sample a batch to train the
+        main network on.
+        Returns the loss for this optimization
+        '''
+        states, actions, rewards, next_states, dones = self.buffer.sample(self.batch_size)
+        state_batch = torch.stack([torch.tensor(s.current_state, dtype=torch.float32) for s in states])
+        # print("State batch", state_batch)
+        action_batch = torch.tensor(actions) - 1  # zero-indexed
+        # print("action batch", action_batch)
+        reward_batch = torch.tensor(rewards, dtype=torch.float32)
+        non_final_mask = torch.tensor([not d for d in dones], dtype=torch.bool)
+        # print("non_final_mask", non_final_mask)
+        # there is an error that sometimes all of the states are final so the following line throws
+        non_final_next_states = torch.stack([torch.tensor(s.current_state, dtype=torch.float32) for s, d in zip(next_states, dones) if not d])
 
-    # def optimize_model(self):
-    #     if len(self.memory) < self.batch_size:
-    #         return
-    #     transitions = self.memory.sample(self.batch_size)
-    #     batch = Transition(*zip(*transitions))  # reorders the Transition objects
-    #     not_final_mask = torch.tensor(tuple(map(lambda s: s is not None,
-    #                                             batch.next_state)))
-    #     not_final_next_states = torch.cat([s for s in batch.next_state if s is not None])
+        current_q_vals = self.model(state_batch).gather(1, action_batch.unsqueeze(1)).squeeze()
+        # print('current_q_vals', current_q_vals)
 
-    #     state_batch = torch.cat(batch.state)
-    #     action_batch = torch.cat(batch.action)
-    #     reward_batch = torch.cat(batch.reward)
+        next_q_vals = torch.zeros(self.batch_size)
+        next_q_vals[non_final_mask] = self.target_model(non_final_next_states).max(1)[0].detach()
 
-    #     # find the q values for the actions that were taken
-    #     state_action_values = self.model(state_batch).gather(1, action_batch)
+        expected_q_vals = reward_batch + (self.gamma * next_q_vals)
+        # print("expected_q_vals", expected_q_vals)
 
-    #     next_state_values = torch.zeros(self.batch_size)
-    #     with torch.no_grad():
-    #         next_state_values[not_final_mask] = 
+        loss_fn = nn.SmoothL1Loss()
+        loss = loss_fn(current_q_vals, expected_q_vals)
+        # print("Loss", loss)
+        self.optimizer.zero_grad()
+        loss.backward()
+        self.optimizer.step()
+
+        return loss.item()
+
+def plot_losses(losses):
+    plt.figure(figsize=(10, 5))
+    plt.plot(losses, label='Loss over time')
+    plt.xlabel('Episode')
+    plt.ylabel('Loss')
+    plt.title('Loss over Time')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+
+def main():
+    a = 2
+    b = 2
+    initial_position = [TOAD] * a + [BLANK] * b + [FROG] * a
+    G = GameState(initial_position, starting_player=TOAD)
+    agent1 = RLAgent(G, TOAD, batch_size=50)
+    agent2 = RandomAgent(G, FROG)
+    losses = agent1.train(opponent=agent2, num_episodes=1000, start_epsilon=0.1)
+    plot_losses(losses)
+
+
+if __name__ == "__main__":
+    main()

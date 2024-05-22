@@ -219,5 +219,6 @@ def main():
     print(G.make_move(2))
     print(G)
 
+
 if __name__ == "__main__":
     main()

@@ -81,6 +81,17 @@ def simulate_many_games(num_games: int, initial_state: GameState,
     return results
 
 
+def plot_losses(losses):
+    plt.figure(figsize=(10, 5))
+    plt.plot(losses, label='Loss over time')
+    plt.xlabel('Moves')
+    plt.ylabel('Loss')
+    plt.title('Loss over Time')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+
 def main():
     a = 2
     b = 2
