@@ -237,19 +237,22 @@ class RLAgent(Agent):
         else:
             return G, 0, False
 
-    def train(self, opponent: Agent, num_episodes: int, start_epsilon=0):
+    def train(self, opponent: Agent, num_episodes: int, start_epsilon=0, end_epsilon=0):
         '''
         The main train loop that runs for num_episodes
         After each state transfer (move in any episode) the
         resulting state, reward, and done will be pushed to
         the replay memory for training.
-        Plays against the Agent given
+        Plays against the Agent given.
+        Smoothly decays epsilon from start to end (I chose inverse sqrt)
         '''
         epsilon = start_epsilon  # set up epsilon schedule later
         losses = []
         for episode in range(num_episodes):
             state = self.initial_state.copy()
             episode_done = False
+            # decay epsilon from start to end using inverse sqrt
+            epsilon = end_epsilon + (start_epsilon - end_epsilon) / (episode + 1) ** 0.5 
             while not episode_done:
                 action = self.choose_move_train(state, epsilon)
                 next_state, reward, done = self.step(state, action)
@@ -260,8 +263,11 @@ class RLAgent(Agent):
 
                 # the opponent responds
                 if not done:
-                    opp_move = opponent.choose_move(next_state)
-                    next_state.make_move(opp_move)
+                    opp_action = opponent.choose_move(next_state)
+                    # this reward is still with respect to the agent being trained
+                    next_state, opp_reward, done = self.step(next_state, opp_action)
+                    reward += opp_reward # this is boring for most movese but technically correct
+                    # if we later implement incremental awards
 
                 self.buffer.push(state, action, reward, next_state, done)
                 state = next_state
@@ -284,32 +290,27 @@ class RLAgent(Agent):
         '''
         states, actions, rewards, next_states, dones = self.buffer.sample(self.batch_size)
         state_batch = torch.stack([torch.tensor(s.current_state, dtype=torch.float32) for s in states])
-        # print("State batch", state_batch)
         action_batch = torch.tensor(actions) - 1  # zero-indexed
-        # print("action batch", action_batch)
         reward_batch = torch.tensor(rewards, dtype=torch.float32)
         non_final_mask = torch.tensor([not d for d in dones], dtype=torch.bool)
-        # print("non_final_mask", non_final_mask)
-        # there is an error that sometimes all of the states are final so the following line throws
         non_final_next_states = torch.stack([torch.tensor(s.current_state, dtype=torch.float32) for s, d in zip(next_states, dones) if not d])
 
         current_q_vals = self.model(state_batch).gather(1, action_batch.unsqueeze(1)).squeeze()
-        # print('current_q_vals', current_q_vals)
 
         next_q_vals = torch.zeros(self.batch_size)
         next_q_vals[non_final_mask] = self.target_model(non_final_next_states).max(1)[0].detach()
 
         expected_q_vals = reward_batch + (self.gamma * next_q_vals)
-        # print("expected_q_vals", expected_q_vals)
 
         loss_fn = nn.SmoothL1Loss()
         loss = loss_fn(current_q_vals, expected_q_vals)
-        # print("Loss", loss)
+
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
 
         return loss.item()
+
 
 def plot_losses(losses):
     plt.figure(figsize=(10, 5))

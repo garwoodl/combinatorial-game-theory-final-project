@@ -63,7 +63,7 @@ def run_game_loop(initial_state: GameState, toad_agent: Agent,
 def simulate_many_games(num_games: int, initial_state: GameState,
                         toad_agent: Agent, frog_agent: Agent, starting_player='mix', verbose=False):
     '''
-    Run a simulation of many games and return the results aa numpy array
+    Run a simulation of many games and return the results as a numpy array
     of the form [TOAD, FROG, FROG, ...] giving the winner of each game
     starting_player defaults to 'mix' which means every game is alternated between who starts first
     if starting_player is given as TOAD or FROG then that amphibian will start all games
