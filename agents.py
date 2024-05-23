@@ -237,7 +237,7 @@ class RLAgent(Agent):
         else:
             return G, 0, False
 
-    def train(self, opponent: Agent, num_episodes: int, start_epsilon=0, end_epsilon=0):
+    def train(self, opponent: Agent, num_episodes: int, start_epsilon=0, end_epsilon=0, verbose=True):
         '''
         The main train loop that runs for num_episodes
         After each state transfer (move in any episode) the
@@ -249,6 +249,9 @@ class RLAgent(Agent):
         epsilon = start_epsilon  # set up epsilon schedule later
         losses = []
         for episode in range(num_episodes):
+            if verbose:
+                if episode % 200 == 0:
+                    print(f"Training {round(100 * episode / num_episodes, 2)}% complete...")
             state = self.initial_state.copy()
             episode_done = False
             # decay epsilon from start to end using inverse sqrt
@@ -279,7 +282,8 @@ class RLAgent(Agent):
 
             if episode % self.target_update_freq == 0:
                 self.update_target_network()
-
+        if verbose:
+            print("Training finished!")
         return losses
 
     def optimize_model(self):
