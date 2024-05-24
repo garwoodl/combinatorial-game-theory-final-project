@@ -315,6 +315,12 @@ class RLAgent(Agent):
 
         return loss.item()
 
+    def save_agent_model(filename=''):
+        '''
+        Save the agent parameters to a file in the directory
+        '''
+        ...
+
 
 def plot_losses(losses):
     plt.figure(figsize=(10, 5))

@@ -61,12 +61,15 @@ def run_game_loop(initial_state: GameState, toad_agent: Agent,
 
 
 def simulate_many_games(num_games: int, initial_state: GameState,
-                        toad_agent: Agent, frog_agent: Agent, starting_player='mix', verbose=False):
+                        toad_agent: Agent, frog_agent: Agent, starting_player='mix', verbose=False,
+                        plot=True):
     '''
     Run a simulation of many games and return the results as a numpy array
     of the form [TOAD, FROG, FROG, ...] giving the winner of each game
     starting_player defaults to 'mix' which means every game is alternated between who starts first
     if starting_player is given as TOAD or FROG then that amphibian will start all games
+
+    if plot is true then it will plot a histogram of the results
     '''
     results = np.zeros(num_games)
     for i in range(num_games):
@@ -78,6 +81,20 @@ def simulate_many_games(num_games: int, initial_state: GameState,
         result = run_game_loop(G, toad_agent, frog_agent, verbose=verbose)
         winner = TOAD if result else FROG
         results[i] = winner
+
+    if plot:
+        # Count the number of wins for each player
+        t_wins = np.sum(results == TOAD)
+        f_wins = np.sum(results == FROG)
+        print(f"Toads won {t_wins} games ({round(t_wins / num_games * 100, 4)}%)")
+        print(f"Frogs won {f_wins} games ({round(f_wins / num_games * 100, 4)}%)")
+
+        # Plotting the results
+        plt.bar([f'Toad ({toad_agent.agent_name})', f'Frog ({frog_agent.agent_name})'], [t_wins, f_wins], color=['blue', 'red'])
+        plt.xlabel('Player')
+        plt.ylabel('Number of Wins')
+        plt.title(f'Distribution of Wins ({starting_player} playing first)')
+        plt.show()
     return results
 
 
