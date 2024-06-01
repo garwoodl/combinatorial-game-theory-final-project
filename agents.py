@@ -129,13 +129,15 @@ class RLAgent(Agent):
     '''
     The agent that will learn to play Toads and Frogs through Q-learning
     '''
-    def __init__(self, initial_state: GameState, amphibian=TOAD, agent_name='rl',
-                 lr=1e-3, batch_size=10, buffer_capacity=1000):
+    def __init__(self, initial_state: GameState, amphibian=TOAD, agent_name='rl', filename='rl.pth',
+                 lr=1e-3, batch_size=10, buffer_capacity=1000, target_update_freq=5, checkpoint_freq=1000):
         self.lr = lr
         self.gamma = 0.9
         self.buffer_capacity = buffer_capacity
         self.buffer = ReplayBuffer(self.buffer_capacity)
-        self.target_update_freq = 5  # how often to update the target network
+        self.target_update_freq = target_update_freq  # how often to update the target network
+        self.checkpoint_freq = checkpoint_freq
+        self.filename = filename
         Agent.__init__(self, initial_state, amphibian, agent_name=agent_name)
         self.model = self.initialize_model()
         self.target_model = self.initialize_model()
@@ -143,25 +145,47 @@ class RLAgent(Agent):
         self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
         self.batch_size = batch_size
         self.rewards = {
-            'win': 10,
+            'win': 30,
             'loss': -10,
             'illegal': -15
         }
 
+# used for files .rl444.pth and .rl_bad_against_random_on242.pth
+    # def initialize_model(self):
+    #     '''
+    #     Make the neural network for Q-function
+    #     '''
+    #     input_size = self.board_size
+    #     h1 = 100
+    #     h2 = 75
+    #     output_size = self.num_moves
+    #     model = nn.Sequential(
+    #         nn.Linear(input_size, h1),
+    #         nn.ReLU(),
+    #         nn.Linear(h1, h2),
+    #         nn.ReLU(),
+    #         nn.Linear(h2, output_size)
+    #     )
+    #     return model
+
     def initialize_model(self):
         '''
         Make the neural network for Q-function
+        This is a deeper improvement from what was being used
         '''
         input_size = self.board_size
         h1 = 100
-        h2 = 75
+        h2 = 150
+        h3 = 100
         output_size = self.num_moves
         model = nn.Sequential(
             nn.Linear(input_size, h1),
             nn.ReLU(),
             nn.Linear(h1, h2),
             nn.ReLU(),
-            nn.Linear(h2, output_size)
+            nn.Linear(h2, h3),
+            nn.ReLU(),
+            nn.Linear(h3, output_size)
         )
         return model
 
@@ -175,6 +199,7 @@ class RLAgent(Agent):
         '''
         Returns a tensor of all q values for all actions in a given state
         '''
+        self.model.eval()
         vec = torch.tensor(state.current_state, dtype=torch.float32).unsqueeze(0)
         return self.model(vec)
 
@@ -182,7 +207,7 @@ class RLAgent(Agent):
         vec = torch.tensor(state.current_state, dtype=torch.float32).unsqueeze(0)
         return self.target_model(vec)
 
-    def choose_move(self, state: GameState, epsilon=0):
+    def choose_move(self, state: GameState, epsilon=0, verbose=True):
         '''
         This is the 'nice' choose_move function to be used
         as the agent's outward facing function
@@ -194,6 +219,11 @@ class RLAgent(Agent):
         with torch.no_grad():
             q_vals = self.state_to_q_vals(state)
             move = int(np.argmax(q_vals) + 1)
+
+            if verbose:
+                print(q_vals)  # to see if the bot is making many legal moves
+                print(move)
+
             if move in legal_moves:
                 return move  # undo zero index
             else:
@@ -211,8 +241,6 @@ class RLAgent(Agent):
             with torch.no_grad():
                 q_vals = self.state_to_q_vals(state)
                 move = int(np.argmax(q_vals) + 1)
-                # print(q_vals)
-                # print(move)
                 return move
 
     def step(self, state: GameState, action: int):
@@ -237,7 +265,7 @@ class RLAgent(Agent):
         else:
             return G, 0, False
 
-    def train(self, opponent: Agent, num_episodes: int, start_epsilon=0, end_epsilon=0, verbose=True):
+    def train(self, opponent: Agent, num_episodes: int, save_model=True, start_epsilon=0, end_epsilon=0, verbose=True,):
         '''
         The main train loop that runs for num_episodes
         After each state transfer (move in any episode) the
@@ -251,18 +279,16 @@ class RLAgent(Agent):
         for episode in range(num_episodes):
             if verbose:
                 if episode % 200 == 0:
-                    print(f"Training {round(100 * episode / num_episodes, 2)}% complete...")
+                    print(f"Training {self.agent_name} {round(100 * episode / num_episodes, 2)}% complete...")
             state = self.initial_state.copy()
             episode_done = False
             # decay epsilon from start to end using inverse sqrt
-            epsilon = end_epsilon + (start_epsilon - end_epsilon) / (episode + 1) ** 0.5 
+            epsilon = end_epsilon + (start_epsilon - end_epsilon) / (episode + 1) ** 0.5
+            ep_i = 0 # to calculate avg reward
             while not episode_done:
+                ep_i += 1
                 action = self.choose_move_train(state, epsilon)
                 next_state, reward, done = self.step(state, action)
-                # print("State", state)
-                # print("Action", action)
-                # print("Reward", reward)
-                # print("Next State", next_state)
 
                 # the opponent responds
                 if not done:
@@ -282,6 +308,9 @@ class RLAgent(Agent):
 
             if episode % self.target_update_freq == 0:
                 self.update_target_network()
+            if episode & self.checkpoint_freq == 0:
+                self.save_checkpoint()
+
         if verbose:
             print("Training finished!")
         return losses
@@ -315,11 +344,17 @@ class RLAgent(Agent):
 
         return loss.item()
 
-    def save_agent_model(filename=''):
+    def save_checkpoint(self):
         '''
         Save the agent parameters to a file in the directory
         '''
-        ...
+        torch.save(self.model.state_dict(), self.filename)
+
+    def load_checkpoint(self, filename):
+        '''
+        Load the parameters of a file in the directory
+        '''
+        self.model.load_state_dict(torch.load(filename))
 
 
 def plot_losses(losses):
