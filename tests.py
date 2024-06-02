@@ -33,10 +33,18 @@ def test_make_move():
     assert G == G2, f"{G} not equal to {G2}"
 
 
+def test_is_P():
+    G = GameState([1, 1, -1, 0, 1, -1, -1, 0, 1, -1])
+    assert G.is_P()
+    G2 = GameState([1, 1, 1, 0, 0, -1, -1, -1])
+    assert not G2.is_P()
+
+
 def main():
     test_state()
     test_get_legal_moves()
     test_make_move()
+    test_is_P()
 
     print("All tests passed!")
 

@@ -147,7 +147,8 @@ class RLAgent(Agent):
         self.rewards = {
             'win': 30,
             'loss': -10,
-            'illegal': -15
+            'illegal': -15,
+            'death_leap': 15
         }
 
 # used for files .rl444.pth and .rl_bad_against_random_on242.pth
@@ -171,7 +172,6 @@ class RLAgent(Agent):
     def initialize_model(self):
         '''
         Make the neural network for Q-function
-        This is a deeper improvement from what was being used
         '''
         input_size = self.board_size
         h1 = 100
@@ -207,7 +207,7 @@ class RLAgent(Agent):
         vec = torch.tensor(state.current_state, dtype=torch.float32).unsqueeze(0)
         return self.target_model(vec)
 
-    def choose_move(self, state: GameState, epsilon=0, verbose=True):
+    def choose_move(self, state: GameState, epsilon=0, verbose=False):
         '''
         This is the 'nice' choose_move function to be used
         as the agent's outward facing function
@@ -247,9 +247,13 @@ class RLAgent(Agent):
         '''
         Returns (next_state, reward, done)
         done means the episode is done
-        If the move is illegal next_state will be None and done will be True
+        If the move is illegal next_state will be None and done will be True.
+        This function is used for the opponents move too so the positive/negative 
+        should be based on self's field of view
+        Accounts for death leap principle now
         '''
         G = state.copy()
+        current_player = G.current_player
         legal_moves = G.get_legal_moves()
 
         if action not in legal_moves:
@@ -263,7 +267,12 @@ class RLAgent(Agent):
             else:
                 return G, self.rewards['loss'], True
         else:
-            return G, 0, False
+            if G.is_P():  # moved to a P position by death leap principle
+                print(G)
+                op_or_not = 1 if current_player == self.amphibian else -1
+                return G, op_or_not * self.rewards['death_leap'], False
+            else:
+                return G, 0, False
 
     def train(self, opponent: Agent, num_episodes: int, save_model=True, start_epsilon=0, end_epsilon=0, verbose=True,):
         '''
@@ -284,7 +293,7 @@ class RLAgent(Agent):
             episode_done = False
             # decay epsilon from start to end using inverse sqrt
             epsilon = end_epsilon + (start_epsilon - end_epsilon) / (episode + 1) ** 0.5
-            ep_i = 0 # to calculate avg reward
+            ep_i = 0  # to calculate avg reward
             while not episode_done:
                 ep_i += 1
                 action = self.choose_move_train(state, epsilon)
@@ -295,15 +304,15 @@ class RLAgent(Agent):
                     opp_action = opponent.choose_move(next_state)
                     # this reward is still with respect to the agent being trained
                     next_state, opp_reward, done = self.step(next_state, opp_action)
-                    reward += opp_reward # this is boring for most movese but technically correct
-                    # if we later implement incremental awards
+                    reward += opp_reward  # counteract reward by the success of the opponent
 
                 self.buffer.push(state, action, reward, next_state, done)
                 state = next_state
                 episode_done = done
 
+                # make sure there are enough move samples to optimize
                 if len(self.buffer) >= self.batch_size:
-                    loss = self.optimize_model()  # this optimizes and returns the loss
+                    loss = self.optimize_model()  # performs one step of backpropagation on the DQN
                     losses.append(loss)
 
             if episode % self.target_update_freq == 0:
@@ -369,13 +378,13 @@ def plot_losses(losses):
 
 
 def main():
-    a = 2
-    b = 2
+    a = 4
+    b = 4
     initial_position = [TOAD] * a + [BLANK] * b + [FROG] * a
     G = GameState(initial_position, starting_player=TOAD)
-    agent1 = RLAgent(G, TOAD, batch_size=50)
-    agent2 = RandomAgent(G, FROG)
-    losses = agent1.train(opponent=agent2, num_episodes=1000, start_epsilon=0.1)
+    agent1 = RLAgent(G, FROG, batch_size=64)
+    agent2 = RandomAgent(G, TOAD)
+    losses = agent1.train(opponent=agent2, num_episodes=500, start_epsilon=0.5, end_epsilon=0)
     plot_losses(losses)
 
 

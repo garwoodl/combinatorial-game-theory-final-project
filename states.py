@@ -125,6 +125,21 @@ class GameState:
         else:
             return (False, None)
 
+    def is_P(self):
+        '''
+        According to the Death Leap Principle, any position in which the only
+        legal moves are jumps into isolated spaces has value 0.
+        '''
+        s = str(self)
+        a = f'|{self.marker_chars[TOAD]}|{self.marker_chars[FROG]}|{self.marker_chars[BLANK]}|{self.marker_chars[BLANK]}|'
+        b = f'|{self.marker_chars[BLANK]}|{self.marker_chars[BLANK]}|{self.marker_chars[TOAD]}|{self.marker_chars[FROG]}|'
+        c = f'|{self.marker_chars[TOAD]}|{self.marker_chars[BLANK]}|'
+        d = f'|{self.marker_chars[BLANK]}|{self.marker_chars[FROG]}|'
+        if (a in s) or (b in s) or (c in s) or (d in s):
+            return False
+        else:
+            return True
+
     # def get_legal_moves(self):
     #     '''
     #     A move is a tuple (player, amphibean_index)
