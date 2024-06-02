@@ -243,6 +243,35 @@ class RLAgent(Agent):
                 move = int(np.argmax(q_vals) + 1)
                 return move
 
+    # def step(self, state: GameState, action: int):
+    #     '''
+    #     Returns (next_state, reward, done)
+    #     done means the episode is done
+    #     If the move is illegal next_state will be None and done will be True.
+    #     This function is used for the opponents move too so the positive/negative 
+    #     should be based on self's field of view
+    #     Accounts for death leap principle now
+    #     '''
+    #     G = state.copy()
+    #     current_player = G.current_player
+    #     legal_moves = G.get_legal_moves()
+
+    #     if action not in legal_moves:
+    #         return None, self.rewards['illegal'], True
+
+    #     G.make_move(action)
+    #     game_over, winner = G.is_game_over()
+    #     if game_over:
+    #         if winner == self.amphibian:
+    #             return G, self.rewards['win'], True
+    #         else:
+    #             return G, self.rewards['loss'], True
+    #     else:
+    #         if G.is_P():  # moved to a P position by death leap principle
+    #             if current_player == self.amphibian:  # get rewarded for moving to a P position
+    #                 return G, self.rewards['death_leap'], False
+    #         return G, 0, False
+
     def step(self, state: GameState, action: int):
         '''
         Returns (next_state, reward, done)
@@ -253,7 +282,6 @@ class RLAgent(Agent):
         Accounts for death leap principle now
         '''
         G = state.copy()
-        current_player = G.current_player
         legal_moves = G.get_legal_moves()
 
         if action not in legal_moves:
@@ -267,12 +295,7 @@ class RLAgent(Agent):
             else:
                 return G, self.rewards['loss'], True
         else:
-            if G.is_P():  # moved to a P position by death leap principle
-                print(G)
-                op_or_not = 1 if current_player == self.amphibian else -1
-                return G, op_or_not * self.rewards['death_leap'], False
-            else:
-                return G, 0, False
+            return G, 0, False
 
     def train(self, opponent: Agent, num_episodes: int, save_model=True, start_epsilon=0, end_epsilon=0, verbose=True,):
         '''
