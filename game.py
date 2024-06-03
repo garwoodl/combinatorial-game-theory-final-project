@@ -123,28 +123,6 @@ def main():
     print(losses)
     # run_game_loop(G, agent1, agent2, verbose=True)
 
-    # H = GameState(initial_position)
-    # num_games = 10000
-    # starting_player = 'mix'
-    # tic = time.time()
-    # results = simulate_many_games(num_games, H, agent1, agent2,
-    #                               starting_player=starting_player, verbose=False)
-    # toc = time.time()
-    # print(f'Simulation took {round(toc - tic, 5)} seconds')
-
-    # # Count the number of wins for each player
-    # t_wins = np.sum(results == TOAD)
-    # f_wins = np.sum(results == FROG)
-    # print(f"Toads won {t_wins} games ({round(t_wins / num_games * 100, 4)}%)")
-    # print(f"Frogs won {f_wins} games ({round(f_wins / num_games * 100, 4)}%)")
-
-    # # Plotting the results
-    # plt.bar([f'Toad ({agent1.agent_name})', f'Frog ({agent2.agent_name})'], [t_wins, f_wins], color=['blue', 'red'])
-    # plt.xlabel('Player')
-    # plt.ylabel('Number of Wins')
-    # plt.title(f'Distribution of Wins ({starting_player} playing first)')
-    # plt.show()
-
 
 if __name__ == "__main__":
     main()
