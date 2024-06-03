@@ -76,8 +76,8 @@ def simulate_many_games(num_games: int, initial_state: GameState,
         G = initial_state.copy()
         if starting_player == 'mix':
             G.current_player = TOAD if (i % 2 == 0) else FROG # alternate every other game
-        else: 
-            G.current_player = starting_player  # can be used to modify who starts the gamess
+        else:
+            G.current_player = starting_player  # can be used to modify who starts the games
         result = run_game_loop(G, toad_agent, frog_agent, verbose=verbose)
         winner = TOAD if result else FROG
         results[i] = winner
