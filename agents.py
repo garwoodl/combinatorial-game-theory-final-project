@@ -130,7 +130,7 @@ class RLAgent(Agent):
     The agent that will learn to play Toads and Frogs through Q-learning
     '''
     def __init__(self, initial_state: GameState, amphibian=TOAD, agent_name='rl', filename='rl.pth',
-                 lr=1e-3, batch_size=10, buffer_capacity=1000, target_update_freq=5, checkpoint_freq=1000):
+                 lr=1e-3, batch_size=10, buffer_capacity=1000, target_update_freq=5, checkpoint_freq=4000):
         self.lr = lr
         self.gamma = 0.9
         self.buffer_capacity = buffer_capacity
